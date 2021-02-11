@@ -1,4 +1,8 @@
-# Voxel data format
+# Voxel data format[DRAFT]
+
+Compact & JavaScript friendly voxel format.
+
+- glTF like
 
 ## File format
 
@@ -6,14 +10,13 @@ File header(16 bytes) + Schema(json) + Data(binary).
 
 | Name    | Size     | Description |
 | ------- | -------- | ----------- |
-| magic   |  4 bytes | "VOXF" |
-| version | uint32 | 1 |
-| size    | uint32     | File size |
-| reserved |  uint32 | 0 |
-| schema | - | Schema |
-| data   | - | Tree data |
+| magic   |  4 bytes | "VOXF"    |
+| version | uint32   | 1         |
+| size    | uint32   | File size |
+| schema  | -        | Schema    |
+| data    | -        | Tree data |
 
-- little endian
+- uint32: little endian
 
 
 ## Schema(json)
@@ -28,16 +31,26 @@ File header(16 bytes) + Schema(json) + Data(binary).
 
 ```js
 {
- location: [level,x,y,z], // optional
- max_child_count: 8, // optional, default:8
- max_depth: 10,  // optional
- data_encoding: "compact", // compact | json
- node_desc_size: 4,
- node_data_schema: [],
- node_count: 123,
- leaf_data_schema: ["float", "float", "float"],
- leaf_count: 1234,
- external_refs: ["URI"],
+  maxDepth: 10,  // optional
+  buffers: [
+      {byteLength: 4096, uri:""}
+  ],
+  accessors: [
+    {buffer:0, byteOffset: 0, componentType:"ui32", count: 128, type: "SCALAR", name: "nodeDesc" },
+    {buffer:0, byteOffset: 512, componentType:"f32", count: 1234, type: "VEC3", name: "nodeData1" },
+  ],
+  primitives: [
+      {}, // empty
+      {attributes:{"COLOR": 1}},  // accessors[1]
+  ],
+  trees: [{
+    location: {}, // optional
+    branchingFactor: 8, // 8:octree
+    nodeDesc: {type:0, accessor:0}, // Array of NodeDesc
+    primitive: 0, // no data
+    leafNodePrimitive: 1, // optional
+  }],
+  externalRefs: ["URI"] // optional
 }
 ```
 
@@ -45,6 +58,8 @@ File header(16 bytes) + Schema(json) + Data(binary).
 
 | Name    | Size       | Description |
 | ------- | ---------- | ----------- |
+| size    | uint32     | schemaSize |
+| format  |  4 bytes   | "BIN"      |
 | nodes         | nodeDescSize * nodeCount | Array of NodeDesc |
 | nodeDataArray | sizeof(node_data) * nodeCount | Array of NodeData |
 | leafDataArray | sizeof(leaf_data) * leafCount | Array of LeafData |
@@ -59,7 +74,7 @@ Nomal node:
 | ------- | ---------- | ----------- |
 | nodeType   | uint8 | 1: normal node |
 | dataType   | uint8 | 0: reserved |
-| childTypes | 16 bits | 0: empty, 1: node, 2: leaf, 3: undefined(for patch data) |
+| childTypes | 16 bits | 0: empty, 1: node, 2: leafNode, 3: undefined(for patch data) |
 
 ```
 Node[0] type:1
